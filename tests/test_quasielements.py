@@ -1,51 +1,68 @@
 import unittest
-from itertools import chain
-from pypes.queue import Queue, WritePad, ReadPad, Empty, ReadError, WriteError
 
-class TestQueue(unittest.TestCase):
+# No exceptions from queue must be imported, if this occurs we are mixing layers 
+from pypes.queue import Queue, WritePad, ReadPad
+
+from pypes.element import SampleSrc, StoreSink, Done, NoInput
+
+class TestQuasiElements(unittest.TestCase):
+    def build_elements(self, sample):
+        q = Queue()
+
+        write = WritePad(q)
+        read = ReadPad(q)
+
+        src = SampleSrc(sample=sample)
+        sink = StoreSink()
+
+        src.output = write
+        sink.input = read
+
+        return q, write, read, src, sink
+
+
     def test_basic(self):
-        queue = Queue()
-        write = WritePad(queue)
-        read = ReadPad(queue)
+        q, write, read, src, sink = self.build_elements(sample=(1, 2, 3))
 
-        for i in (1, 2, 3):
-            write.put(i)
+        # Check basic stuff
+        src.run()
+        src.run()
+        src.run()
+        self.assertEqual(q, [1, 2, 3])
 
-        r = read.flush()
- 
-        self.assertEqual(r, [1, 2, 3])
+        with self.assertRaises(Done):
+            src.run()
 
+    def test_empty(self):
+        q, write, read, src, sink = self.build_elements(sample=(1, 2))
 
-    def test_put_after_empty(self):
-        queue = Queue()
-        write = WritePad(queue)
-        read = ReadPad(queue)
+        # Push and pull [1]
+        self.assertEqual(src.run(), True)
+        self.assertEqual(sink.run(), True)
+        self.assertEqual(sink.run(), False)
 
-        write.put(1)
-        write.put(2)
-        r = read.flush()
+        # Push [2]
+        self.assertEqual(src.run(), True)
+        self.assertEqual(sink.run(), True)
 
-        write.put(3)
-        r += read.flush()
+    def test_eof(self):
+        q, write, read, src, sink = self.build_elements(sample=(1, 2))
 
-        self.assertEqual(r, [1, 2, 3])
+        self.assertEqual(src.run(), True)
+        self.assertEqual(src.run(), True)
+        with self.assertRaises(Done):
+            src.run()
 
-    def test_read_error_after_gets(self):
-        queue = Queue()
-        write = WritePad(queue)
-        read = ReadPad(queue)
+        self.assertEqual(sink.run(), True)
+        self.assertEqual(sink.run(), True)
 
-        write.put(1)
-        write.put(2)
-        write.close()
+        # readpad raises EOF so element must raise Done
+        with self.assertRaises(Done):
+            sink.run()
 
-        read.get()
-        read.get()
-        with self.assertRaises(ReadError):
-            read.get()
-
-        with self.assertRaises(WriteError):
-            write.put('x')
-
+        # src and writepad are done
+        with self.assertRaises(Done):
+            src.run()
+        
 if __name__ == '__main__':
     unittest.main()

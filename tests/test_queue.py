@@ -1,6 +1,6 @@
 import unittest
-from itertools import chain
-from pypes.queue import Queue, WritePad, ReadPad, Empty, ReadError, WriteError
+from pypes.queue import Queue, WritePad, ReadPad, \
+    Empty, EOF, WriteError
 
 class TestQueue(unittest.TestCase):
     def test_basic(self):
@@ -41,7 +41,7 @@ class TestQueue(unittest.TestCase):
 
         read.get()
         read.get()
-        with self.assertRaises(ReadError):
+        with self.assertRaises(EOF):
             read.get()
 
         with self.assertRaises(WriteError):
