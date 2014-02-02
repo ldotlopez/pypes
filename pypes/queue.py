@@ -117,8 +117,10 @@ class Queue(list):
         if not self.writeable:
             raise EOF()
 
-        ret = self.copy()
-        self.clear()
+        # Not very elegant but...
+        ret = list(self)
+        while self:
+            self.pop()
 
         return ret
         
