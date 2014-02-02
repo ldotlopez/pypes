@@ -1,5 +1,6 @@
 from functools import wraps
-from .queue import Empty, EOF, ReadError, WriteError
+from .queue import Queue, WritePad, ReadPad, \
+        Empty, EOF, ReadError, WriteError
 
 class Done(Exception): pass
 class NoInput(Exception): pass
@@ -41,6 +42,9 @@ class Element:
     def attach(self, container, input=None, output=None):
         self._container = container
         self._input, self._output = input, output
+
+    def __str__(self):
+        return "{}-{}".format(self.__class__.__name__, id(self))
 
     @property
     def alive(self):
@@ -128,4 +132,35 @@ class StoreSink(Element):
             self.finish()
 
 class Pipeline:
-    pass
+    def __init__(self):
+        self._elements = set()
+
+    def connect(self, src, sink):
+        # Insert elements
+        self._elements.add(src)
+        self._elements.add(sink)
+
+        # Connect both elements thru a queue and pads
+        q = Queue()
+        src.output = WritePad(q)
+        sink.input = ReadPad(q)
+
+        print("Connect {} -> {}".format(str(src), str(sink)))
+
+    def run(self):
+        if not self._elements:
+            return False
+
+        dones = []
+        for e in self._elements:
+            print("Run {}".format(e))
+            try:
+                e.run()
+            except Done:
+                dones.append(e)
+                print(" - raise done")
+
+        for e in dones:
+            self._elements.remove(e)
+
+        return True
