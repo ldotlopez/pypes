@@ -17,15 +17,14 @@ class Element:
     def __str__(self):
         return "{}-{}".format(self.__class__.__name__, id(self))
 
-
-    def get(self):
-        packet = self._container.get(self)
-        _logger.debug("GET [{}] <- {}".format(self, packet))
+    def get(self, input='default'):
+        packet = self._container.get(self, input)
+        _logger.debug("GET [{}] <- {}::{}".format(self, input, packet))
         return packet
 
-    def put(self, packet):
-        _logger.debug("PUT [{}] -> {}".format(self, packet))
-        self._container.put(self, packet)
+    def put(self, packet, output='default'):
+        _logger.debug("PUT [{}] -> {}::{}".format(self, output, packet))
+        self._container.put(self, packet, output)
 
     def finish(self):
         _logger.debug("FINISH {}".format(self))
@@ -92,7 +91,7 @@ class Pipeline:
         # Relations between sinks and srcs
         self._rev_rels = {}
 
-    def connect(self, src, sink):
+    def connect(self, src, sink, src_output='default', sink_input='default'):
         # Insert elements
         self._elements.add(src)
         src.attach(self)
@@ -141,7 +140,7 @@ class Pipeline:
         return self._rev_queues[sink]
 
 
-    def put(self, element, packet):
+    def put(self, element, packet, output='default'):
         """Puts a packet from elment into the pipeline flow
         Raises UnknowElement if element is not in pipeline
         Raises WriteError if element has no writeable queue
@@ -153,7 +152,7 @@ class Pipeline:
         self.write_queue(element).append(packet)
 
 
-    def get(self, sink):
+    def get(self, sink, input='default'):
         """Gets a packet for sink from the pipeline flow
         Raises Empty if there is not data to read
         Raises UnknowElement if sink is not in pipeline
