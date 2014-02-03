@@ -72,7 +72,7 @@ class Tee(Element):
             packet = self.get()
             self.put(packet, self.output_pattern % 0)
 
-            for n in range(0, self.n_ouputs - 1):
+            for n in range(1, self.n_ouputs):
                 copy = pickle.loads(pickle.dumps(packet))
                 self.put(packet, self.output_pattern % n)
 

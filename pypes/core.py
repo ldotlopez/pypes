@@ -19,60 +19,14 @@ class Element:
 
     def get(self, input='default'):
         packet = self._container.get(self, input)
-        _logger.debug("GET [{}] <- {}::{}".format(self, input, packet))
         return packet
 
     def put(self, packet, output='default'):
-        _logger.debug("PUT [{}] -> {}::{}".format(self, output, packet))
         self._container.put(self, packet, output)
 
     def finish(self):
         _logger.debug("FINISH {}".format(self))
         raise Finish()
-
-
-class SampleSrc(Element):
-    def __init__(self, sample=('foo', 'bar', 'frob')):
-        super(SampleSrc, self).__init__()
-        self._sample = list(sample)
-
-    def run(self):
-        try:
-            self.put(self._sample.pop(0))
-            return True
-
-        except IndexError:
-            self.finish()
-
-
-class NullSink(Element):
-    def run(self):
-        try:
-            x = self.get()
-            return True
-
-        except Empty:
-            return False
-
-        except EOF:
-            self.finish()
-
-
-class StoreSink(Element):
-    def __init__(self):
-        super(StoreSink, self).__init__()
-        self.store = []
-
-    def run(self):
-        try:
-            self.store.append(self.get())
-            return True
-
-        except Empty:
-            return False
-
-        except EOF:
-            self.finish()
 
 
 class Pipeline:
@@ -100,56 +54,70 @@ class Pipeline:
         sink.attach(self)
 
         q = []
-        self._queues[src] = q
-        self._rev_queues[sink] = q
+        self._queues[(src, src_output)] = q
+        self._rev_queues[(sink, sink_input)] = q
 
-        self._rels[src] = sink
-        self._rev_rels[sink] = src
+        self._rels[(src, src_output)] = (sink, sink_input)
+        self._rev_rels[(sink, sink_input)] = (src, src_output)
 
-        _logger.debug("CONNECT [{}] -> [{}]".format(str(src), str(sink)))
+        _logger.debug("CONNECT [{}::{}] -> [{}::{}]".format(src, src_output, sink, sink_input))
 
-    def is_src(self, src):
-        return src in self._queues
-
-    def is_sink(self, sink):
-        return sink in self._rev_queues
-
-    def src_for(self, sink):
+    def get_write_queue(self, element, name='default'):
         try:
-            return self._rev_rels[sink]
+            return self._queues[(element, name)]
         except KeyError:
-            raise UnknowElement()
-
-    def sink_for(self, src):
-        try:
-            return self._rels.get[src]
-        except KeyError:
-            raise UnknowElement()
-
-    def write_queue(self, src):
-        if not self.is_src(src):
             raise WriteError()
 
-        return self._queues[src]
-
-    def read_queue(self, sink):
-        if not self.is_sink(sink):
+    def get_read_queue(self, element, name='default'):
+        try:
+            return self._rev_queues[(element, name)]
+        except KeyError:
             raise ReadError()
 
-        # src_for_sink = self.src_for(sink)
-        return self._rev_queues[sink]
+    def is_src(self, src, output='default'):
+        return (src, output) in self._queues
+
+    def is_sink(self, sink, input='default'):
+        return (sink, input) in self._rev_queues
 
 
-    def put(self, element, packet, output='default'):
+    def src_for(self, sink, input='default'):
+        try:
+            return self._rev_rels[(sink, input)]
+
+        except KeyError:
+            raise UnknowElement()
+
+
+    #def sink_for(self, src, input='default'):
+    #    try:
+    #        return self._rels.get[(src, output)]
+    #    except KeyError:
+    #        raise UnknowElement()
+
+    #def write_queue(self, src, output):
+    #    if not self.is_src(src, output):
+    #        raise WriteError()
+    #
+    #    return self._queues[(src, output)]
+
+    #def read_queue(self, sink, input):
+    #    if not self.is_sink(sink, input):
+    #        raise ReadError()
+    #
+    #    return self._rev_queues[(sink, input)]
+
+
+    def put(self, src, packet, output='default'):
         """Puts a packet from elment into the pipeline flow
         Raises UnknowElement if element is not in pipeline
         Raises WriteError if element has no writeable queue
         """
-
-        if not element in self._elements:
+        if not src in self._elements:
             raise UnknowElement()
 
-        self.write_queue(element).append(packet)
+        _logger.debug("PUT [{}] -> {}::{}".format(src, output, packet))
+        self.get_write_queue(src, output).append(packet)
 
 
     def get(self, sink, input='default'):
@@ -163,28 +131,28 @@ class Pipeline:
         if not sink in self._elements:
             raise UnknowElement()
 
-        if not self.is_sink(sink):
+        if not self.is_sink(sink, input):
             raise ReadError()
 
         try:
-            return self.read_queue(sink).pop(0)
+            packet = self.get_read_queue(sink, input).pop(0)
+            _logger.debug("GET [{}] <- {}::{}".format(sink, input, packet))
+            return packet
+
         except IndexError:
             # Check if queue has reached EOF
-            src = self.src_for(sink)
-            if src not in self._queues:
+            (src, output) = self.src_for(sink, input)
+            if (src, output) not in self._queues:
                 raise EOF()
             else:
                 raise Empty()
 
     def disconnect(self, element):
-        if self.is_src(element):
-            del self._rels[element]
-            del self._queues[element]
+        self._queues = {k: v for (k,v) in self._queues.items() if k[0] != element}
+        self._rev_queues = {k: v for (k,v) in self._rev_queues.items() if k[0] != element}
 
-        if self.is_sink(element):
-            del self._rev_queues[element]
-            del self._rev_rels[element]
-
+        self._rels = {k: v for (k,v) in self._rels.items() if k[0] != element}
+        self._rev_rels = {k: v for (k,v) in self._rev_rels.items() if k[0] != element}
 
         self._elements.remove(element)
 

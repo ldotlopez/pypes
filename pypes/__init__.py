@@ -1,1 +1,1 @@
-from .core import Pipeline, Element
+from .core import Pipeline, Element, WriteError, ReadError 
