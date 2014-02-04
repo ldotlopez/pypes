@@ -62,6 +62,12 @@ class Pipeline:
 
         _logger.debug("CONNECT [{}::{}] -> [{}::{}]".format(src, src_output, sink, sink_input))
 
+
+    def connect_many(self, *args):
+        for idx in range(0, len(args) - 1):
+            self.connect(args[idx], args[idx+1])
+
+
     def get_write_queue(self, element, name='default'):
         try:
             return self._queues[(element, name)]
