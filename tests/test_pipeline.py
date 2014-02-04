@@ -1,6 +1,6 @@
 import unittest
 from pypes import Pipeline, WriteError
-from pypes.elements import SampleSrc, StoreSink, Tee, Adder
+from pypes.elements import SampleSrc, StoreSink, Tee, Adder, Zip
 
 
 class TestPipeline(unittest.TestCase):
@@ -90,6 +90,25 @@ class TestPipeline(unittest.TestCase):
 
         self.assertEqual(sink1.store, [1, 2, 3])
         self.assertEqual(sink2.store, [3, 4, 5])
+
+    def test_zip(self):
+        src1 = SampleSrc(sample=['a', 'b', 'c'])
+        src2 = SampleSrc(sample=['$', '%', '!'])
+        src3 = SampleSrc(sample=[1, 2, 3])
+
+        zip = Zip(n_inputs=3)
+
+        sink = StoreSink()
+
+        pipe = Pipeline()
+        pipe.connect(src1, zip, 'default', 'zip_00')
+        pipe.connect(src2, zip, 'default', 'zip_01')
+        pipe.connect(src3, zip, 'default', 'zip_02')
+
+        pipe.connect(zip, sink)
+        pipe.execute()
+
+        self.assertEqual(sink.store, ['a', '$', 1, 'b', '%', 2, 'c', '!', 3])
 
 if __name__ == '__main__':
     unittest.main()

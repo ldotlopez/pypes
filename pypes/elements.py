@@ -13,10 +13,6 @@ class Adder(Transformer):
 
 
 class SampleSrc(Element):
-    #def __init__(self, sample=('foo', 'bar', 'frob')):
-    #    super(SampleSrc, self).__init__()
-    #    self._sample = list(sample)
-
     def run(self):
         try:
             sample = self.kwargs.get('sample', [])
@@ -78,6 +74,32 @@ class Tee(Element):
 
         except EOF:
             self.finish()
+
+class Zip(Element):
+    def __init__(self, n_inputs=1, input_pattern='zip_%02d'):
+        super(Zip, self).__init__(n_inputs=n_inputs, input_pattern=input_pattern)
+
+        self.inputs = [input_pattern % x for x in range(n_inputs)]
+
+    def run(self):
+        if not self.inputs:
+            self.finish()
+
+        input = self.inputs.pop(0)
+
+        try:
+            x = self.get(input)
+            self.put(x)
+            self.inputs.append(input)
+            return True
+
+        except Empty:
+            self.inputs.append(input)
+            return False
+
+        except EOF:
+            return False
+
 
 class HttpSrc(Element):
     def run(self):
