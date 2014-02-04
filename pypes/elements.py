@@ -1,68 +1,26 @@
 import pickle
+from urllib.request import urlopen
 
-from .core import Element, Empty, EOF
+from bs4 import BeautifulSoup
 
-
-class Transformer(Element):
-    """Transformer implements common functionality for elements with one input and one output
-    Derived classes must implement the 'transform' method instead of the 'run' one.
-    """
-    def run(self):
-        try:
-            packet = self.get()
-            self.put(self.transform(packet))
-
-        except Empty:
-            return False
-
-        except EOF:
-            self.finish()
-
-    def transform(self, input):
-        """Apply whatever is needed and return the transformed value"""
-        raise Exception('Not implemented')
-
-
-class Filter(Element):
-    """
-    Filter allows to write elements with similar functionality to the builtins.filter method
-    Derived classes must implement the 'filter' function with similar behaviour to  builtins.filter"""
-    def run(self):
-        try:
-            packet = self.get()
-            if self.filter(packet):
-                self.put(packet)
-                return True
-            else:
-                return False
-
-        except Empty:
-            return False
-
-        except EOF:
-            raise self.finish()
-
-    def filter(self, x):
-        """Returns True if x must pass, False elsewhere"""
-        raise Exception('Not implemented')
+from .core import Element, Transformer, Filter, \
+    Empty, EOF
 
 
 class Adder(Transformer):
-    def __init__(self, amount=1):
-        self.ammount = amount
-
     def transform(self, x):
-        return x + self.ammount
+        return x + self.kwargs.get('amount', 0)
 
 
 class SampleSrc(Element):
-    def __init__(self, sample=('foo', 'bar', 'frob')):
-        super(SampleSrc, self).__init__()
-        self._sample = list(sample)
+    #def __init__(self, sample=('foo', 'bar', 'frob')):
+    #    super(SampleSrc, self).__init__()
+    #    self._sample = list(sample)
 
     def run(self):
         try:
-            self.put(self._sample.pop(0))
+            sample = self.kwargs.get('sample', [])
+            self.put(sample.pop(0))
             return True
 
         except IndexError:
@@ -120,3 +78,19 @@ class Tee(Element):
 
         except EOF:
             self.finish()
+
+class HttpSrc(Element):
+    def run(self):
+        buff = urlopen(self.kwargs.get('url')).read()
+        self.put(buff)
+        self.finish()
+
+
+class Soup(Transformer):
+    def transform(self, buffer):
+        soup = BeautifulSoup(buffer)
+        selector = self.kwargs.get('selector')
+        if selector:
+            return soup.select(selector)
+        else:
+            return soup

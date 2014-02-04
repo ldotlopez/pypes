@@ -5,19 +5,19 @@ from pypes.elements import SampleSrc, StoreSink, Tee, Adder
 
 class TestPipeline(unittest.TestCase):
     def test_basic(self):
-        src, sink = SampleSrc(sample=(1, 'a')), StoreSink()
+        src, sink = SampleSrc(sample=[1, 'a']), StoreSink()
         Pipeline().connect(src, sink).execute()
 
         self.assertEqual(sink.store, [1, 'a'])
 
     def test_adder(self):
-        src, adder, sink = SampleSrc(sample=(1, 2, 3)), Adder(), StoreSink()
+        src, adder, sink = SampleSrc(sample=[1, 2, 3]), Adder(amount=1), StoreSink()
         Pipeline().connect_many(src, adder, sink).execute()
 
         self.assertEqual(sink.store, [2, 3, 4])
 
     def test_false_tee(self):
-        src, tee, sink = SampleSrc(sample=(1, 2, 3)), Tee(1), StoreSink()
+        src, tee, sink = SampleSrc(sample=[1, 2, 3]), Tee(1), StoreSink()
 
         pipe = Pipeline().connect(src, tee)
         pipe.connect(tee, sink, 'tee_00', 'default').execute()
@@ -26,7 +26,7 @@ class TestPipeline(unittest.TestCase):
 
     def test_tee(self):
         pipe = Pipeline()
-        src = SampleSrc(sample=(1, 2, 3))
+        src = SampleSrc(sample=[1, 2, 3])
         tee = Tee(2)
         adder = Adder(amount=2)
         sink1, sink2 = StoreSink(), StoreSink()

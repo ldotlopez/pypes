@@ -28,6 +28,10 @@ class EOF(Exception):
 #_logger = get_logger()
 
 class Element:
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
     def attach(self, container):
         self._container = container
 
@@ -176,3 +180,50 @@ class Pipeline:
     def execute(self):
         while self.run():
             pass
+
+
+class Transformer(Element):
+    """Transformer implements common functionality for elements with one input and one output
+    Derived classes must implement the 'transform' method instead of the 'run' one.
+    """
+    def run(self):
+        try:
+            packet = self.get()
+            self.put(self.transform(packet))
+
+        except Empty:
+            return False
+
+        except EOF:
+            self.finish()
+
+    def transform(self, input):
+        """Apply whatever is needed and return the transformed value"""
+        raise Exception('Not implemented')
+
+
+class Filter(Element):
+    """
+    Filter allows to write elements with similar functionality to the builtins.filter method
+    Derived classes must implement the 'filter' function with similar behaviour to  builtins.filter"""
+    def run(self):
+        try:
+            packet = self.get()
+            if self.filter(packet):
+                self.put(packet)
+                return True
+            else:
+                return False
+
+        except Empty:
+            return False
+
+        except EOF:
+            raise self.finish()
+
+    def filter(self, x):
+        """Returns True if x must pass, False elsewhere"""
+        raise Exception('Not implemented')
+
+
+
