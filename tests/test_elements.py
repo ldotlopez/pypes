@@ -26,23 +26,14 @@ class TestFilter(Filter):
 
 class TestElements(unittest.TestCase):
     def test_transfomer(self):
-        pipe = Pipeline()
-
         src, trans, sink = SampleSrc(sample=(1, 'a', 2)), TestTransformer(), StoreSink()
-        pipe.connect_many(src, trans, sink)
-
-        while pipe.run():
-            pass
+        Pipeline().connect_many(src, trans, sink).execute()
 
         self.assertEqual(sink.store, [2, 'a', 4])
 
     def test_filter(self):
-        pipe = Pipeline()
-
         src, filt, sink = SampleSrc(sample=(1, 'a', 3, '8', 53, 22)), TestFilter(), StoreSink()
-        pipe.connect_many(src, filt, sink)
-        while pipe.run():
-            pass
+        Pipeline().connect_many(src, filt, sink).execute()
 
         self.assertEqual(sink.store, ['8', 22])
 

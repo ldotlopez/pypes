@@ -5,36 +5,22 @@ from pypes.elements import SampleSrc, StoreSink, Tee, Adder
 
 class TestPipeline(unittest.TestCase):
     def test_basic(self):
-        pipe = Pipeline()
-
-        src, sink = SampleSrc(sample=(1,'a')), StoreSink()
-        pipe.connect(src, sink)
-        while pipe.run():
-            pass
+        src, sink = SampleSrc(sample=(1, 'a')), StoreSink()
+        Pipeline().connect(src, sink).execute()
 
         self.assertEqual(sink.store, [1, 'a'])
 
     def test_adder(self):
-        pipe = Pipeline()
-        src, adder, sink = SampleSrc(sample=(1,2, 3)), Adder(), StoreSink()
-
-        pipe.connect(src, adder)
-        pipe.connect(adder, sink)
-
-        while pipe.run():
-            pass
+        src, adder, sink = SampleSrc(sample=(1, 2, 3)), Adder(), StoreSink()
+        Pipeline().connect_many(src, adder, sink).execute()
 
         self.assertEqual(sink.store, [2, 3, 4])
 
     def test_false_tee(self):
-        pipe = Pipeline()
         src, tee, sink = SampleSrc(sample=(1, 2, 3)), Tee(1), StoreSink()
 
-        pipe.connect(src, tee)
-        pipe.connect(tee, sink, 'tee_00', 'default')
-
-        while pipe.run():
-            pass
+        pipe = Pipeline().connect(src, tee)
+        pipe.connect(tee, sink, 'tee_00', 'default').execute()
 
         self.assertEqual(sink.store, [1, 2, 3])
 
@@ -89,7 +75,7 @@ class TestPipeline(unittest.TestCase):
         sink1_from_tee00 = pipe.get_read_queue(sink1)
         self.assertIsNotNone(sink1_from_tee00)
         self.assertEqual(sink1_from_tee00, tee00_to_sink1)
-        
+
         # adder <- tee_01
         adder_from_tee01 = pipe.get_read_queue(adder)
         self.assertIsNotNone(adder_from_tee01)
@@ -100,8 +86,7 @@ class TestPipeline(unittest.TestCase):
         self.assertIsNotNone(sink2_from_adder)
         self.assertEqual(sink2_from_adder, adder_to_sink2)
 
-        while pipe.run():
-            pass
+        pipe.execute()
 
         self.assertEqual(sink1.store, [1, 2, 3])
         self.assertEqual(sink2.store, [3, 4, 5])

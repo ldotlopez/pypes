@@ -79,9 +79,13 @@ class Pipeline:
 
         #_logger.debug("CONNECT [{}::{}] -> [{}::{}]".format(src, src_output, sink, sink_input))
 
+        return self
+
     def connect_many(self, *args):
         for idx in range(0, len(args) - 1):
             self.connect(args[idx], args[idx+1])
+
+        return self
 
     def get_write_queue(self, element, name='default'):
         try:
@@ -168,3 +172,7 @@ class Pipeline:
             self.disconnect(element)
 
         return len(self._elements) > 0
+
+    def execute(self):
+        while self.run():
+            pass
