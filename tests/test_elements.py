@@ -1,7 +1,7 @@
 import unittest
 from pypes import Pipeline
 from pypes.elements import SampleSrc, StoreSink, \
-    Transformer, Filter, \
+    Transformer, Filter, LambdaFilter, \
     HttpSrc, Soup
 
 
@@ -42,6 +42,12 @@ class TestElements(unittest.TestCase):
         src, soup, store = HttpSrc(url='https://duckduckgo.com/html/?q=python'), Soup(selector='.results_links a.large'), StoreSink()
         Pipeline().connect_many(src, soup, store).execute()
         self.assertTrue(len(store.store) > 0)
+
+    def test_lambda(self):
+        src, filt, store = SampleSrc(sample=[1, 3, 5, 7, 11]), LambdaFilter(func=lambda x: x in (3, 5)), StoreSink()
+        Pipeline().connect_many(src, filt, store).execute()
+        self.assertEqual(store.store, [3, 5])
+
 
 if __name__ == '__main__':
     unittest.main()

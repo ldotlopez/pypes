@@ -224,6 +224,3 @@ class Filter(Element):
     def filter(self, x):
         """Returns True if x must pass, False elsewhere"""
         raise Exception('Not implemented')
-
-
-

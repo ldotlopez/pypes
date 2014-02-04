@@ -94,3 +94,10 @@ class Soup(Transformer):
             return soup.select(selector)
         else:
             return soup
+
+
+class LambdaFilter(Filter):
+    def filter(self, x):
+        f = self.kwargs.get('func')
+        return f(x)
+

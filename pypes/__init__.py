@@ -1,1 +1,3 @@
-from .core import Pipeline, Element, WriteError, ReadError 
+from .core import Pipeline, Element, \
+    Transformer, Filter, \
+    WriteError, ReadError 
