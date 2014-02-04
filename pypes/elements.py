@@ -2,6 +2,56 @@ import pickle
 
 from .core import Element, Empty, EOF
 
+
+class Transformer(Element):
+    """Filter implements common functionality for elements with one input and one output
+    Derived classes must implement the transform method instead of the run one.
+    """
+    def run(self):
+        try:
+            packet = self.get()
+            self.put(self.transform(packet))
+
+        except Empty:
+            return False
+
+        except EOF:
+            self.finish()
+
+    def transform(self, input):
+        """Apply whatever is needed and return a value"""
+        raise Exception('Not implemented')
+
+
+class Filter(Element):
+    def run(self):
+        try:
+            packet = self.get()
+            if self.filter(packet):
+                self.put(packet)
+                return True
+            else:
+                return False
+
+        except Empty:
+            return False
+
+        except EOF:
+            raise self.finish()
+
+    def filter(self, x):
+        """Returns True is x must pass, False elsewhere"""
+        raise Exception('Not implemented')
+
+
+class Adder(Transformer):
+    def __init__(self, amount=1):
+        self.ammount = amount
+
+    def transform(self, x):
+        return x + self.ammount
+
+
 class SampleSrc(Element):
     def __init__(self, sample=('foo', 'bar', 'frob')):
         super(SampleSrc, self).__init__()
@@ -15,21 +65,6 @@ class SampleSrc(Element):
         except IndexError:
             self.finish()
 
-
-class Adder(Element):
-    def __init__(self, ammount=1):
-        self.ammount = ammount
-
-    def run(self):
-        try:
-            self.put(self.get() + self.ammount)
-            return True
-
-        except Empty:
-            return False
-
-        except EOF:
-            self.finish()
 
 
 class NullSink(Element):

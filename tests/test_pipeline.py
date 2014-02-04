@@ -42,7 +42,7 @@ class TestPipeline(unittest.TestCase):
         pipe = Pipeline()
         src = SampleSrc(sample=(1, 2, 3))
         tee = Tee(2)
-        adder = Adder(ammount=2)
+        adder = Adder(amount=2)
         sink1, sink2 = StoreSink(), StoreSink()
 
         pipe.connect(src, tee)
