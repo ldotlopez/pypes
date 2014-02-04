@@ -4,8 +4,8 @@ from .core import Element, Empty, EOF
 
 
 class Transformer(Element):
-    """Filter implements common functionality for elements with one input and one output
-    Derived classes must implement the transform method instead of the run one.
+    """Transformer implements common functionality for elements with one input and one output
+    Derived classes must implement the 'transform' method instead of the 'run' one.
     """
     def run(self):
         try:
@@ -19,11 +19,14 @@ class Transformer(Element):
             self.finish()
 
     def transform(self, input):
-        """Apply whatever is needed and return a value"""
+        """Apply whatever is needed and return the transformed value"""
         raise Exception('Not implemented')
 
 
 class Filter(Element):
+    """
+    Filter allows to write elements with similar functionality to the builtins.filter method
+    Derived classes must implement the 'filter' function with similar behaviour to  builtins.filter"""
     def run(self):
         try:
             packet = self.get()
@@ -40,7 +43,7 @@ class Filter(Element):
             raise self.finish()
 
     def filter(self, x):
-        """Returns True is x must pass, False elsewhere"""
+        """Returns True if x must pass, False elsewhere"""
         raise Exception('Not implemented')
 
 
@@ -66,11 +69,10 @@ class SampleSrc(Element):
             self.finish()
 
 
-
 class NullSink(Element):
     def run(self):
         try:
-            x = self.get()
+            self.get()
             return True
 
         except Empty:
@@ -109,13 +111,12 @@ class Tee(Element):
 
             for n in range(1, self.n_ouputs):
                 copy = pickle.loads(pickle.dumps(packet))
-                self.put(packet, self.output_pattern % n)
+                self.put(copy, self.output_pattern % n)
 
             return True
-            
+
         except Empty:
             return False
 
         except EOF:
             self.finish()
-
