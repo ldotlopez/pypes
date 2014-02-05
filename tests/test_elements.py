@@ -1,8 +1,13 @@
 import unittest
+
+import tempfile
+
 from pypes import Pipeline
 from pypes.elements import SampleSrc, StoreSink, \
     Transformer, Filter, LambdaFilter, \
     HttpSrc, Soup
+
+from pypes.file import FileSrc, FileSink
 
 
 class TestTransformer(Transformer):
@@ -47,6 +52,21 @@ class TestElements(unittest.TestCase):
         src, filt, store = SampleSrc(sample=[1, 3, 5, 7, 11]), LambdaFilter(func=lambda x: x in (3, 5)), StoreSink()
         Pipeline().connect_many(src, filt, store).execute()
         self.assertEqual(store.store, [3, 5])
+
+    def test_file(self):
+        contents = u'Hi, this is a test.'
+
+        t1 = tempfile.NamedTemporaryFile()
+        t1.file.write(bytes(contents, 'UTF-8'))
+        t1.file.close()
+
+        t2 = tempfile.NamedTemporaryFile()
+        t2.file.close()
+
+        Pipeline().connect_many(FileSrc(path=t1.name), FileSink(path=t2.name)).execute()
+
+        with open(t2.name) as fh:
+            self.assertEqual(fh.read(), contents)
 
 
 if __name__ == '__main__':

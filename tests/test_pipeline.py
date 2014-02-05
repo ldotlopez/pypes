@@ -1,5 +1,6 @@
 import unittest
-from pypes import Pipeline, WriteError
+from pypes import Pipeline
+from pypes.core import WriteError
 from pypes.elements import SampleSrc, StoreSink, Tee, Adder, Zip
 
 
