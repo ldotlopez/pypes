@@ -3,7 +3,7 @@ from urllib.request import urlopen
 
 from bs4 import BeautifulSoup
 
-from .core import Element, Transformer, Filter, \
+from .core import Element, Transformer, \
     Empty, EOF
 
 
@@ -118,8 +118,33 @@ class Soup(Transformer):
             return soup
 
 
-class LambdaFilter(Filter):
-    def filter(self, x):
-        f = self.kwargs.get('func')
-        return f(x)
+class Debugger(Element):
+    def run(self):
+        try:
+            import ipdb
+            debugger = ipdb
+        except ImportError:
+            import pdb
+            debugger = pdb
+        debugger.set_trace()
 
+        try:
+            self.put(self.get())
+            return True
+
+        except Empty:
+            return False
+
+        except EOF:
+            self.finish()
+
+
+class CustomTransformer(Transformer):
+    def __init__(self, func=None, *args, **kwargs):
+        if not callable(func):
+            raise ValueError('func is not a callable')
+
+        self.func = func
+
+    def transform(self, input):
+        return self.func(input)

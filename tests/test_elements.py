@@ -4,7 +4,7 @@ import tempfile
 
 from pypes import Pipeline
 from pypes.elements import SampleSrc, StoreSink, \
-    Transformer, Filter, LambdaFilter, \
+    Transformer, Filter, FuncFilter, \
     HttpSrc, Soup
 
 from pypes.file import FileSrc, FileSink
@@ -49,7 +49,7 @@ class TestElements(unittest.TestCase):
         self.assertTrue(len(store.store) > 0)
 
     def test_lambda(self):
-        src, filt, store = SampleSrc(sample=[1, 3, 5, 7, 11]), LambdaFilter(func=lambda x: x in (3, 5)), StoreSink()
+        src, filt, store = SampleSrc(sample=[1, 3, 5, 7, 11]), FuncFilter(func=lambda x: x in (3, 5)), StoreSink()
         Pipeline().connect_many(src, filt, store).execute()
         self.assertEqual(store.store, [3, 5])
 
