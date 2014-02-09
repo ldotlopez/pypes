@@ -1,9 +1,7 @@
 import pickle
 from urllib.request import urlopen
 
-from bs4 import BeautifulSoup
-
-from .core import Element, Transformer, \
+from .core import Element, Filter, Transformer, \
     Empty, EOF
 
 
@@ -108,16 +106,6 @@ class HttpSrc(Element):
         self.finish()
 
 
-class Soup(Transformer):
-    def transform(self, buffer):
-        soup = BeautifulSoup(buffer)
-        selector = self.kwargs.get('selector')
-        if selector:
-            return soup.select(selector)
-        else:
-            return soup
-
-
 class Debugger(Element):
     def run(self):
         try:
@@ -147,4 +135,15 @@ class CustomTransformer(Transformer):
         self.func = func
 
     def transform(self, input):
+        return self.func(input)
+
+
+class CustomFilter(Filter):
+    def __init__(self, func=None, *args, **kwargs):
+        if not callable(func):
+            raise ValueError('func is not a callable')
+
+        self.func = func
+
+    def filter(self, input):
         return self.func(input)

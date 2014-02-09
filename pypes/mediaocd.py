@@ -51,4 +51,6 @@ class Normalizer(Transformer):
 
 class NearestMatch(Transformer):
     def transform(self, value):
-        return nearest_match(value, match_list=self.kwargs.get('match_list', ()), cutoff=self.kwargs.get('match_list', 0.6))
+        match_list=self.kwargs.get('match_list', ())
+        cutoff=self.kwargs.get('match_list', 0.6)
+        return nearest_match(value, match_list=match_list, cutoff=cutoff)

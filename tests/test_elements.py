@@ -4,10 +4,11 @@ import tempfile
 
 from pypes import Pipeline
 from pypes.elements import SampleSrc, StoreSink, \
-    Transformer, Filter, FuncFilter, \
-    HttpSrc, Soup
+    Transformer, Filter, CustomFilter, \
+    HttpSrc
 
 from pypes.file import FileSrc, FileSink
+from pypes.bs4 import Soup
 
 
 class TestTransformer(Transformer):
@@ -49,12 +50,12 @@ class TestElements(unittest.TestCase):
         self.assertTrue(len(store.store) > 0)
 
     def test_lambda(self):
-        src, filt, store = SampleSrc(sample=[1, 3, 5, 7, 11]), FuncFilter(func=lambda x: x in (3, 5)), StoreSink()
+        src, filt, store = SampleSrc(sample=[1, 3, 5, 7, 11]), CustomFilter(func=lambda x: x in (3, 5)), StoreSink()
         Pipeline().connect_many(src, filt, store).execute()
         self.assertEqual(store.store, [3, 5])
 
     def test_file(self):
-        contents = u'Hi, this is a test.'
+        contents = 'Hi, this is a test.'
 
         t1 = tempfile.NamedTemporaryFile()
         t1.file.write(bytes(contents, 'UTF-8'))
