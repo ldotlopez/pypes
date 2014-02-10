@@ -9,13 +9,13 @@ class TestPipeline(unittest.TestCase):
         src, sink = SampleSrc(sample=[1, 'a']), StoreSink()
         Pipeline().connect(src, sink).execute()
 
-        self.assertEqual(sink.store, [1, 'a'])
+        self.assertEqual(sink.packets, [1, 'a'])
 
     def test_adder(self):
         src, adder, sink = SampleSrc(sample=[1, 2, 3]), Adder(amount=1), StoreSink()
         Pipeline().connect_many(src, adder, sink).execute()
 
-        self.assertEqual(sink.store, [2, 3, 4])
+        self.assertEqual(sink.packets, [2, 3, 4])
 
     def test_false_tee(self):
         src, tee, sink = SampleSrc(sample=[1, 2, 3]), Tee(1), StoreSink()
@@ -23,7 +23,7 @@ class TestPipeline(unittest.TestCase):
         pipe = Pipeline().connect(src, tee)
         pipe.connect(tee, sink, 'tee_00', 'default').execute()
 
-        self.assertEqual(sink.store, [1, 2, 3])
+        self.assertEqual(sink.packets, [1, 2, 3])
 
     def test_tee(self):
         pipe = Pipeline()
@@ -89,8 +89,8 @@ class TestPipeline(unittest.TestCase):
 
         pipe.execute()
 
-        self.assertEqual(sink1.store, [1, 2, 3])
-        self.assertEqual(sink2.store, [3, 4, 5])
+        self.assertEqual(sink1.packets, [1, 2, 3])
+        self.assertEqual(sink2.packets, [3, 4, 5])
 
     def test_zip(self):
         src1 = SampleSrc(sample=['a', 'b', 'c'])
@@ -109,7 +109,7 @@ class TestPipeline(unittest.TestCase):
         pipe.connect(zip, sink)
         pipe.execute()
 
-        self.assertEqual(sink.store, ['a', '$', 1, 'b', '%', 2, 'c', '!', 3])
+        self.assertEqual(sink.packets, ['a', '$', 1, 'b', '%', 2, 'c', '!', 3])
 
 if __name__ == '__main__':
     unittest.main()
