@@ -95,13 +95,17 @@ class Pipeline:
         try:
             return self._queues[(element, name)]
         except KeyError:
-            raise WriteError()
+            pass
+
+        raise WriteError("Queue '{}' not defined for '{}'".format(name, element))
 
     def get_read_queue(self, element, name='default'):
         try:
             return self._rev_queues[(element, name)]
         except KeyError:
-            raise ReadError()
+            pass
+
+        raise ReadError("Queue '{}' not defined for '{}'".format(name, element))
 
     def is_src(self, src, output='default'):
         return (src, output) in self._queues
@@ -112,9 +116,10 @@ class Pipeline:
     def src_for(self, sink, input='default'):
         try:
             return self._rev_rels[(sink, input)]
-
         except KeyError:
-            raise UnknowElement()
+            pass
+
+        raise UnknowElement("Combination of '{}' and queue '{}' has no reverse matching".format(sink, input))
 
     def put(self, src, packet, output='default'):
         """Puts a packet from elment into the pipeline flow
@@ -122,9 +127,8 @@ class Pipeline:
         Raises WriteError if element has no writeable queue
         """
         if not src in self._elements:
-            raise UnknowElement()
+            raise UnknowElement("Combination of '{}' and queue '{}' has no matching".format(src, output))
 
-        #_logger.debug("PUT [{}] -> {}::{}".format(src, output, packet))
         self.get_write_queue(src, output).append(packet)
 
     def get(self, sink, input='default'):
@@ -147,12 +151,14 @@ class Pipeline:
             return packet
 
         except IndexError:
-            # Check if queue has reached EOF
-            (src, output) = self.src_for(sink, input)
-            if (src, output) not in self._queues:
-                raise EOF()
-            else:
-                raise Empty()
+            pass
+
+        # Check if queue has reached EOF
+        (src, output) = self.src_for(sink, input)
+        if (src, output) not in self._queues:
+            raise EOF()
+        else:
+            raise Empty()
 
     def disconnect(self, element):
         self._queues = {k: v for (k, v) in self._queues.items() if k[0] != element}

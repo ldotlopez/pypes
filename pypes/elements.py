@@ -37,11 +37,11 @@ class NullSink(Element):
 class StoreSink(Element):
     def __init__(self):
         super(StoreSink, self).__init__()
-        self.store = []
+        self.packets = []
 
     def run(self):
         try:
-            self.store.append(self.get())
+            self.packets.append(self.get())
             return True
 
         except Empty:
@@ -51,9 +51,27 @@ class StoreSink(Element):
             self.finish()
 
 
+class Packer(Element):
+    def __init__(self, *args, **kwargs):
+        super(Packer, self).__init__(self, *args, **kwargs)
+        self._packets = []
+
+    def run(self):
+        try:
+            self._packets.append(self.get())
+            return True
+
+        except Empty:
+            return False
+
+        except EOF:
+            self.put(self._packets)
+            self.finish()
+
+
 class Tee(Element):
-    def __init__(self, n_ouputs, output_pattern='tee_%02d'):
-        self.n_ouputs = n_ouputs
+    def __init__(self, n_outputs, output_pattern='tee_%02d'):
+        self.n_outputs = n_outputs
         self.output_pattern = output_pattern
 
     def run(self):
@@ -61,7 +79,7 @@ class Tee(Element):
             packet = self.get()
             self.put(packet, self.output_pattern % 0)
 
-            for n in range(1, self.n_ouputs):
+            for n in range(1, self.n_outputs):
                 copy = pickle.loads(pickle.dumps(packet))
                 self.put(copy, self.output_pattern % n)
 
@@ -72,6 +90,7 @@ class Tee(Element):
 
         except EOF:
             self.finish()
+
 
 class Zip(Element):
     def __init__(self, n_inputs=1, input_pattern='zip_%02d'):
@@ -97,6 +116,19 @@ class Zip(Element):
 
         except EOF:
             return False
+
+
+class Head(Filter):
+    def __init__(self, n=-1, *args, **kwargs):
+        super(Head, self).__init__(*args, **kwargs)
+        self.n = n
+        self.i = 0
+
+    def filter(self, packet):
+        r = self.n == -1 or self.i < self.n
+        self.i += 1
+
+        return r
 
 
 class HttpSrc(Element):
@@ -147,3 +179,36 @@ class CustomFilter(Filter):
 
     def filter(self, input):
         return self.func(input)
+
+
+class DictFixer(Transformer):
+    """
+    Applies changes to dicts
+    Parameters:
+    - override: Boolean to control if values should be overriden (forced)
+    - values: dict with new values
+    """
+    def transform(self, packet):
+        if not isinstance(packet, dict):
+            raise ValueError('Packet is not a dict object')
+
+        override = self.kwargs.get('override', False)
+        values = self.kwargs.get('values', {})
+
+        if not override:
+            values = {key: value for (key, value) in values.items() if key not in packet}
+
+        packet.update(values)
+        return packet
+
+
+class DictFilter(Transformer):
+    def transform(self, packet):
+        if not isinstance(packet, dict):
+            raise ValueError('Packet is not a dict object')
+
+        keys = self.kwargs.get('keys', None)
+        if keys is None:
+            return packet
+
+        return {key: value for (key, value) in packet.items() if key in keys}
