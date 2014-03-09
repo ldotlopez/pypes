@@ -10,14 +10,123 @@ class Adder(Transformer):
         return x + self.kwargs.get('amount', 0)
 
 
-class SampleSrc(Element):
+class CustomTransformer(Transformer):
+    def __init__(self, func=None, *args, **kwargs):
+        if not callable(func):
+            raise ValueError('func is not a callable')
+
+        self.func = func
+
+    def transform(self, input):
+        return self.func(input)
+
+
+class CustomFilter(Filter):
+    def __init__(self, func=None, *args, **kwargs):
+        if not callable(func):
+            raise ValueError('func is not a callable')
+
+        self.func = func
+
+    def filter(self, input):
+        return self.func(input)
+
+
+class DictFixer(Transformer):
+    """
+    Applies changes to dicts
+    Parameters:
+    - override: Boolean to control if values should be overriden (forced)
+    - values: dict with new values
+    """
+    def transform(self, packet):
+        if not isinstance(packet, dict):
+            raise ValueError('Packet is not a dict object')
+
+        override = self.kwargs.get('override', False)
+        values = self.kwargs.get('values', {})
+
+        if not override:
+            values = {key: value for (key, value) in values.items() if key not in packet}
+
+        packet.update(values)
+        return packet
+
+
+class DictFilter(Transformer):
+    def transform(self, packet):
+        if not isinstance(packet, dict):
+            raise ValueError('Packet is not a dict object')
+
+        keys = self.kwargs.get('keys', None)
+        if keys is None:
+            return packet
+
+        return {key: value for (key, value) in packet.items() if key in keys}
+
+
+class FetcherProcessor(Transformer):
+    def transform(self, url):
+        return self.kwargs.get('fetcher').fetch(url)
+
+
+class GeneratorSrc(Element):
+    def __init__(self, generator=None, iterations=-1):
+        self.g = generator
+        self.i = 0
+        self.n = iterations
+
+    def run(self):
+        if self.n >= 0 and self.i >= self.n:
+            self.finish()
+
+        try:
+            packet = next(self.g)
+            self.put(packet)
+            self.i += 1
+
+        except StopIteration:
+            self.finish()
+
+
+class Head(Filter):
+    def __init__(self, n=-1, *args, **kwargs):
+        super(Head, self).__init__(*args, **kwargs)
+        self.n = n
+        self.i = 0
+
+    def filter(self, packet):
+        r = self.n == -1 or self.i < self.n
+        self.i += 1
+
+        return r
+
+
+class HttpSrc(Element):
+    def run(self):
+        buff = urlopen(self.kwargs.get('url')).read()
+        self.put(buff)
+        self.finish()
+
+
+class Debugger(Element):
     def run(self):
         try:
-            sample = self.kwargs.get('sample', [])
-            self.put(sample.pop(0))
+            import ipdb
+            debugger = ipdb
+        except ImportError:
+            import pdb
+            debugger = pdb
+        debugger.set_trace()
+
+        try:
+            self.put(self.get())
             return True
 
-        except IndexError:
+        except Empty:
+            return False
+
+        except EOF:
             self.finish()
 
 
@@ -31,6 +140,17 @@ class NullSink(Element):
             return False
 
         except EOF:
+            self.finish()
+
+
+class SampleSrc(Element):
+    def run(self):
+        try:
+            sample = self.kwargs.get('sample', [])
+            self.put(sample.pop(0))
+            return True
+
+        except IndexError:
             self.finish()
 
 
@@ -116,99 +236,3 @@ class Zip(Element):
 
         except EOF:
             return False
-
-
-class Head(Filter):
-    def __init__(self, n=-1, *args, **kwargs):
-        super(Head, self).__init__(*args, **kwargs)
-        self.n = n
-        self.i = 0
-
-    def filter(self, packet):
-        r = self.n == -1 or self.i < self.n
-        self.i += 1
-
-        return r
-
-
-class HttpSrc(Element):
-    def run(self):
-        buff = urlopen(self.kwargs.get('url')).read()
-        self.put(buff)
-        self.finish()
-
-
-class Debugger(Element):
-    def run(self):
-        try:
-            import ipdb
-            debugger = ipdb
-        except ImportError:
-            import pdb
-            debugger = pdb
-        debugger.set_trace()
-
-        try:
-            self.put(self.get())
-            return True
-
-        except Empty:
-            return False
-
-        except EOF:
-            self.finish()
-
-
-class CustomTransformer(Transformer):
-    def __init__(self, func=None, *args, **kwargs):
-        if not callable(func):
-            raise ValueError('func is not a callable')
-
-        self.func = func
-
-    def transform(self, input):
-        return self.func(input)
-
-
-class CustomFilter(Filter):
-    def __init__(self, func=None, *args, **kwargs):
-        if not callable(func):
-            raise ValueError('func is not a callable')
-
-        self.func = func
-
-    def filter(self, input):
-        return self.func(input)
-
-
-class DictFixer(Transformer):
-    """
-    Applies changes to dicts
-    Parameters:
-    - override: Boolean to control if values should be overriden (forced)
-    - values: dict with new values
-    """
-    def transform(self, packet):
-        if not isinstance(packet, dict):
-            raise ValueError('Packet is not a dict object')
-
-        override = self.kwargs.get('override', False)
-        values = self.kwargs.get('values', {})
-
-        if not override:
-            values = {key: value for (key, value) in values.items() if key not in packet}
-
-        packet.update(values)
-        return packet
-
-
-class DictFilter(Transformer):
-    def transform(self, packet):
-        if not isinstance(packet, dict):
-            raise ValueError('Packet is not a dict object')
-
-        keys = self.kwargs.get('keys', None)
-        if keys is None:
-            return packet
-
-        return {key: value for (key, value) in packet.items() if key in keys}

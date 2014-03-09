@@ -1,4 +1,7 @@
-# from .logging import get_logger
+from ldotcommons.logging import get_logger
+
+
+_logger = get_logger()
 
 
 class WriteError(Exception):
@@ -24,8 +27,6 @@ class Empty(Exception):
 class EOF(Exception):
     pass
 
-
-#_logger = get_logger()
 
 class Element:
     def __init__(self, *args, **kwargs):
