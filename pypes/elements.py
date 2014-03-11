@@ -1,6 +1,7 @@
-from importlib import import_module
 import pickle
 from urllib.request import urlopen
+
+from ldotcommons.utils import get_debugger
 
 from .core import Element, Filter, Transformer, \
     Empty, EOF
@@ -35,19 +36,7 @@ class CustomFilter(Filter):
 
 class Debugger(Element):
     def run(self):
-        debugger = None
-
-        for m in ['ipdb', 'pdb']:
-            try:
-                mod = import_module(m)
-                break
-            except ImportError:
-                pass
-
-        if debugger is None:
-            raise Exception('No debugger available')
-
-        debugger.set_trace()
+        get_debugger().set_trace()
 
         try:
             self.put(self.get())
@@ -193,7 +182,7 @@ class PickleSink(Element):
 
     def run(self):
         try:
-            packets.append(self.get())
+            self.packets.append(self.get())
             return True
 
         except Empty:
@@ -232,24 +221,6 @@ class StoreSink(Element):
             return False
 
         except EOF:
-            self.finish()
-
-
-class Packer(Element):
-    def __init__(self, *args, **kwargs):
-        super(Packer, self).__init__(self, *args, **kwargs)
-        self._packets = []
-
-    def run(self):
-        try:
-            self._packets.append(self.get())
-            return True
-
-        except Empty:
-            return False
-
-        except EOF:
-            self.put(self._packets)
             self.finish()
 
 
