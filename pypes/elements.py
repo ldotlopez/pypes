@@ -1,3 +1,4 @@
+from importlib import import_module
 import pickle
 from urllib.request import urlopen
 
@@ -30,6 +31,33 @@ class CustomFilter(Filter):
 
     def filter(self, input):
         return self.func(input)
+
+
+class Debugger(Element):
+    def run(self):
+        debugger = None
+
+        for m in ['ipdb', 'pdb']:
+            try:
+                mod = import_module(m)
+                break
+            except ImportError:
+                pass
+
+        if debugger is None:
+            raise Exception('No debugger available')
+
+        debugger.set_trace()
+
+        try:
+            self.put(self.get())
+            return True
+
+        except Empty:
+            return False
+
+        except EOF:
+            self.finish()
 
 
 class DictFixer(Transformer):
@@ -109,27 +137,6 @@ class HttpSrc(Element):
         self.finish()
 
 
-class Debugger(Element):
-    def run(self):
-        try:
-            import ipdb
-            debugger = ipdb
-        except ImportError:
-            import pdb
-            debugger = pdb
-        debugger.set_trace()
-
-        try:
-            self.put(self.get())
-            return True
-
-        except Empty:
-            return False
-
-        except EOF:
-            self.finish()
-
-
 class NullSink(Element):
     def run(self):
         try:
@@ -140,6 +147,63 @@ class NullSink(Element):
             return False
 
         except EOF:
+            self.finish()
+
+
+class Packer(Element):
+    def __init__(self, *args, **kwargs):
+        super(Packer, self).__init__(self, *args, **kwargs)
+        self._packets = []
+
+    def run(self):
+        try:
+            self._packets.append(self.get())
+            return True
+
+        except Empty:
+            return False
+
+        except EOF:
+            self.put(self._packets)
+            self.finish()
+
+
+class PickleSrc(Element):
+    def __init__(self, filename=None):
+        fh = open(filename)
+        self.packets = pickle.load(fh)
+        fh.close()
+
+    def run(self):
+        try:
+            packet = self.packets.pop()
+            self.put(packet)
+
+        except IndexError:
+            self.finish()
+
+
+class PickleSink(Element):
+    def __init__(self, **kwargs):
+        filename = kwargs.pop('filename', None)
+
+        super(PickleSink, self).__init__(**kwargs)
+        self.filename = filename
+        self.packets = []
+
+    def run(self):
+        try:
+            packets.append(self.get())
+            return True
+
+        except Empty:
+            return False
+
+        except EOF:
+            fh = open(self.filename, 'wb+')
+            pickle.dump(self.packets, fh)
+            fh.close()
+
             self.finish()
 
 
