@@ -68,6 +68,11 @@ class Pipeline:
         self._rev_rels = {}
 
     def connect(self, src, sink, src_output='default', sink_input='default'):
+        for (e, etype) in [(src, 'src'), (sink, 'sink')]:
+            if not isinstance(e, Element):
+                raise Exception("{} '{}' is not a pypes element".format(etype, e))
+
+
         # Insert elements
         self._elements.add(src)
         src.attach(self)
