@@ -40,11 +40,11 @@ class Element:
         return "{}-{}".format(self.__class__.__name__, id(self))
 
     def get(self, input='default'):
-        packet = self._container.get(self, input)
+        packet = self._container.get_packet(self, input)
         return packet
 
     def put(self, packet, output='default'):
-        self._container.put(self, packet, output)
+        self._container.put_packet(self, packet, output)
 
     def finish(self):
         #_logger.debug("FINISH {}".format(self))
@@ -71,7 +71,6 @@ class Pipeline:
         for (e, etype) in [(src, 'src'), (sink, 'sink')]:
             if not isinstance(e, Element):
                 raise Exception("{} '{}' is not a pypes element".format(etype, e))
-
 
         # Insert elements
         self._elements.add(src)
@@ -127,7 +126,7 @@ class Pipeline:
 
         raise UnknowElement("Combination of '{}' and queue '{}' has no reverse matching".format(sink, input))
 
-    def put(self, src, packet, output='default'):
+    def put_packet(self, src, packet, output='default'):
         """Puts a packet from elment into the pipeline flow
         Raises UnknowElement if element is not in pipeline
         Raises WriteError if element has no writeable queue
@@ -137,7 +136,7 @@ class Pipeline:
 
         self.get_write_queue(src, output).append(packet)
 
-    def get(self, sink, input='default'):
+    def get_packet(self, sink, input='default'):
         """Gets a packet for the sink:input pair from the pipeline flow
         Raises Empty if there is not data to read
         Raises UnknowElement if sink is not in pipeline
