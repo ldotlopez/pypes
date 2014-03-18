@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
     name='pypes',
-    version='0.0.0.20140317',
+    version='0.0.0.20140318.1',
     author='L. López',
     author_email='ldotlopez@gmail.com',
     packages=['pypes', 'pypes.tests'],
