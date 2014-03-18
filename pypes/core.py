@@ -197,8 +197,9 @@ class Pipeline:
         self._rels = {k: v for (k, v) in self._rels.items() if k[0] != element}
         self._rev_rels = {k: v for (k, v) in self._rev_rels.items() if k[0] != element}
 
+        # Elements are removed from _elements list but not from _table because they must be available even after execution
         self._elements.remove(element)
-        self._table = {k: v for (k, v) in self._table.items() if v != element}
+        # self._table = {k: v for (k, v) in self._table.items() if v != element}
 
     def run(self):
         finished = []
