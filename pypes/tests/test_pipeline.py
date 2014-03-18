@@ -1,7 +1,7 @@
 import unittest
 from pypes import Pipeline
 from pypes.core import WriteError
-from pypes.elements import SampleSrc, StoreSink, Tee, Adder, Zip
+from pypes.elements import SampleSrc, StoreSink, Tee, Adder, Zip, NullSrc, NullSink
 
 
 class TestPipeline(unittest.TestCase):
@@ -28,7 +28,7 @@ class TestPipeline(unittest.TestCase):
     def test_tee(self):
         pipe = Pipeline()
         src = SampleSrc(sample=[1, 2, 3])
-        tee = Tee(2)
+        tee = Tee(n_outputs=2)
         adder = Adder(amount=2)
         sink1, sink2 = StoreSink(), StoreSink()
 
@@ -95,7 +95,7 @@ class TestPipeline(unittest.TestCase):
     def test_zip(self):
         src1 = SampleSrc(sample=['a', 'b', 'c'])
         src2 = SampleSrc(sample=['$', '%', '!'])
-        src3 = SampleSrc(sample=[1, 2, 3])
+        src3 = SampleSrc(sample=['1', '2', '3'])
 
         zip = Zip(n_inputs=3)
 
@@ -109,7 +109,23 @@ class TestPipeline(unittest.TestCase):
         pipe.connect(zip, sink)
         pipe.execute()
 
-        self.assertEqual(sink.packets, ['a', '$', 1, 'b', '%', 2, 'c', '!', 3])
+        self.assertEqual(sorted(sink.packets), sorted(['a', '$', '1', 'b', '%', '2', 'c', '!', '3']))
+
+    def test_name(self):
+        src, sink = NullSrc(name='src'), NullSink(name='sink')
+        pipe = Pipeline().connect(src, sink)
+
+        self.assertEqual(src, pipe.get('src'))
+        self.assertEqual(sink, pipe.get('sink'))
+
+    def test_duplicate_name(self):
+        src, sink = NullSrc(name='null'), NullSink(name='null')
+        pipe = Pipeline().connect(src, sink)
+
+        self.assertEqual(src, pipe.get('null'))
+        self.assertNotEqual(sink, pipe.get('null'))
+
+        self.assertEqual(sink, pipe.get('null-1'))
 
 
 if __name__ == '__main__':

@@ -32,12 +32,21 @@ class Element:
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
-
-    def attach(self, container):
-        self._container = container
+        self._name = self.kwargs.get('name', self.__class__.__name__)
 
     def __str__(self):
         return "{}-{}".format(self.__class__.__name__, id(self))
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, v):
+        raise TypeError('name property is read-only')
+
+    def attach(self, container):
+        self._container = container
 
     def get(self, input='default'):
         packet = self._container.get_packet(self, input)
@@ -54,6 +63,7 @@ class Element:
 class Pipeline:
     def __init__(self):
         self._elements = set()
+        self._table = {}
 
         # Dict of queues using src element has key
         self._queues = {}
@@ -67,17 +77,29 @@ class Pipeline:
         # Relations between sinks and srcs
         self._rev_rels = {}
 
+    def _insert(self, element):
+        self._elements.add(element)
+        element.attach(self)
+
+        i = 0
+        while True:
+            key = element.name
+            if i > 0:
+                key += '-{}'.format(i)
+            if key not in self._table:
+                break
+            i += 1
+
+        self._table[key] = element
+
     def connect(self, src, sink, src_output='default', sink_input='default'):
         for (e, etype) in [(src, 'src'), (sink, 'sink')]:
             if not isinstance(e, Element):
                 raise Exception("{} '{}' is not a pypes element".format(etype, e))
 
         # Insert elements
-        self._elements.add(src)
-        src.attach(self)
-
-        self._elements.add(sink)
-        sink.attach(self)
+        self._insert(src)
+        self._insert(sink)
 
         q = []
         self._queues[(src, src_output)] = q
@@ -95,6 +117,9 @@ class Pipeline:
             self.connect(args[idx], args[idx+1])
 
         return self
+
+    def get(self, *args, **kwargs):
+        return self._table.get(*args, **kwargs)
 
     def get_write_queue(self, element, name='default'):
         try:
@@ -173,6 +198,7 @@ class Pipeline:
         self._rev_rels = {k: v for (k, v) in self._rev_rels.items() if k[0] != element}
 
         self._elements.remove(element)
+        self._table = {k: v for (k, v) in self._table.items() if v != element}
 
     def run(self):
         finished = []

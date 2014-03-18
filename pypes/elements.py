@@ -14,6 +14,8 @@ class Adder(Transformer):
 
 class CustomTransformer(Transformer):
     def __init__(self, func=None, *args, **kwargs):
+        super(CustomTransformer, self).__init__(*args, **kwargs)
+
         if not callable(func):
             raise ValueError('func is not a callable')
 
@@ -25,6 +27,8 @@ class CustomTransformer(Transformer):
 
 class CustomFilter(Filter):
     def __init__(self, func=None, *args, **kwargs):
+        super(CustomTransformer, self).__init__(*args, **kwargs)
+
         if not callable(func):
             raise ValueError('func is not a callable')
 
@@ -88,7 +92,9 @@ class FetcherProcessor(Transformer):
 
 
 class GeneratorSrc(Element):
-    def __init__(self, generator=None, iterations=-1):
+    def __init__(self, generator=None, iterations=-1, *args, **kwargs):
+        super(GeneratorSrc, self).__init__(*args, **kwargs)
+
         self.g = generator
         self.i = 0
         self.n = iterations
@@ -123,6 +129,11 @@ class HttpSrc(Element):
     def run(self):
         buff = urlopen(self.kwargs.get('url')).read()
         self.put(buff)
+        self.finish()
+
+
+class NullSrc(Element):
+    def run(self):
         self.finish()
 
 
@@ -208,8 +219,8 @@ class SampleSrc(Element):
 
 
 class StoreSink(Element):
-    def __init__(self):
-        super(StoreSink, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(StoreSink, self).__init__(*args, **kwargs)
         self.packets = []
 
     def run(self):
@@ -225,7 +236,8 @@ class StoreSink(Element):
 
 
 class Tee(Element):
-    def __init__(self, n_outputs, output_pattern='tee_%02d'):
+    def __init__(self, *args, n_outputs=1, output_pattern='tee_%02d', **kwargs):
+        super(Tee, self).__init__(args, **kwargs)
         self.n_outputs = n_outputs
         self.output_pattern = output_pattern
 
