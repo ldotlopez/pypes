@@ -1,12 +1,14 @@
-import re
-import os
 import difflib
+import os
+import re
+
 import guessit
-from . import Element, Transformer, Empty, EOF
+
+from . import EOF, Element, Empty, Transformer
 
 
 def _regex_chain_process(s, regexes, *args, **kwargs):
-    for (regex, repl) in regexes:
+    for regex, repl in regexes:
         s = re.subn(regex, repl, s, *args, **kwargs)[0]
     return s
 
@@ -29,7 +31,7 @@ def nearest_match(value, match_list, cutoff=0.6):
 
 class GuessItParser(Element):
     def run(self):
-        filetype = self.kwargs.get('filetype', 'autodetect')
+        filetype = self.kwargs.get("filetype", "autodetect")
 
         try:
             x = self.get()
@@ -45,12 +47,12 @@ class GuessItParser(Element):
 
 class Normalizer(Transformer):
     def transform(self, value):
-        regexes = self.kwargs.get('regexes', ())
+        regexes = self.kwargs.get("regexes", ())
         return normalize(value, regexes)
 
 
 class NearestMatch(Transformer):
     def transform(self, value):
-        match_list=self.kwargs.get('match_list', ())
-        cutoff=self.kwargs.get('match_list', 0.6)
+        match_list = self.kwargs.get("match_list", ())
+        cutoff = self.kwargs.get("match_list", 0.6)
         return nearest_match(value, match_list=match_list, cutoff=cutoff)

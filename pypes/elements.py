@@ -3,21 +3,20 @@ from urllib.request import urlopen
 
 from ldotcommons.utils import get_debugger
 
-from .core import Element, Filter, Transformer, \
-    Empty, EOF
+from .core import EOF, Element, Empty, Filter, Transformer
 
 
 class Adder(Transformer):
     def transform(self, x):
-        return x + self.kwargs.get('amount', 0)
+        return x + self.kwargs.get("amount", 0)
 
 
 class CustomTransformer(Transformer):
     def __init__(self, func=None, *args, **kwargs):
-        super(CustomTransformer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         if not callable(func):
-            raise ValueError('func is not a callable')
+            raise ValueError("func is not a callable")
 
         self.func = func
 
@@ -30,7 +29,7 @@ class CustomFilter(Filter):
         super(CustomTransformer, self).__init__(*args, **kwargs)
 
         if not callable(func):
-            raise ValueError('func is not a callable')
+            raise ValueError("func is not a callable")
 
         self.func = func
 
@@ -60,15 +59,18 @@ class DictFixer(Transformer):
     - override: Boolean to control if values should be overriden (forced)
     - values: dict with new values
     """
+
     def transform(self, packet):
         if not isinstance(packet, dict):
-            raise ValueError('Packet is not a dict object')
+            raise ValueError("Packet is not a dict object")
 
-        override = self.kwargs.get('override', False)
-        values = self.kwargs.get('values', {})
+        override = self.kwargs.get("override", False)
+        values = self.kwargs.get("values", {})
 
         if not override:
-            values = {key: value for (key, value) in values.items() if key not in packet}
+            values = {
+                key: value for (key, value) in values.items() if key not in packet
+            }
 
         packet.update(values)
         return packet
@@ -77,9 +79,9 @@ class DictFixer(Transformer):
 class DictFilter(Transformer):
     def transform(self, packet):
         if not isinstance(packet, dict):
-            raise ValueError('Packet is not a dict object')
+            raise ValueError("Packet is not a dict object")
 
-        keys = self.kwargs.get('keys', None)
+        keys = self.kwargs.get("keys", None)
         if keys is None:
             return packet
 
@@ -88,12 +90,12 @@ class DictFilter(Transformer):
 
 class FetcherProcessor(Transformer):
     def transform(self, url):
-        return self.kwargs.get('fetcher').fetch(url)
+        return self.kwargs.get("fetcher").fetch(url)
 
 
 class GeneratorSrc(Element):
     def __init__(self, generator=None, iterations=-1, *args, **kwargs):
-        super(GeneratorSrc, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.g = generator
         self.i = 0
@@ -114,7 +116,7 @@ class GeneratorSrc(Element):
 
 class Head(Filter):
     def __init__(self, n=-1, *args, **kwargs):
-        super(Head, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.n = n
         self.i = 0
 
@@ -127,7 +129,7 @@ class Head(Filter):
 
 class HttpSrc(Element):
     def run(self):
-        buff = urlopen(self.kwargs.get('url')).read()
+        buff = urlopen(self.kwargs.get("url")).read()
         self.put(buff)
         self.finish()
 
@@ -152,7 +154,7 @@ class NullSink(Element):
 
 class Packer(Element):
     def __init__(self, *args, **kwargs):
-        super(Packer, self).__init__(self, *args, **kwargs)
+        super().__init__(self, *args, **kwargs)
         self._packets = []
 
     def run(self):
@@ -185,9 +187,9 @@ class PickleSrc(Element):
 
 class PickleSink(Element):
     def __init__(self, **kwargs):
-        filename = kwargs.pop('filename', None)
+        filename = kwargs.pop("filename", None)
 
-        super(PickleSink, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.filename = filename
         self.packets = []
 
@@ -200,7 +202,7 @@ class PickleSink(Element):
             return False
 
         except EOF:
-            fh = open(self.filename, 'wb+')
+            fh = open(self.filename, "wb+")
             pickle.dump(self.packets, fh)
             fh.close()
 
@@ -210,7 +212,7 @@ class PickleSink(Element):
 class SampleSrc(Element):
     def run(self):
         try:
-            sample = self.kwargs.get('sample', [])
+            sample = self.kwargs.get("sample", [])
             self.put(sample.pop(0))
             return True
 
@@ -220,7 +222,7 @@ class SampleSrc(Element):
 
 class StoreSink(Element):
     def __init__(self, *args, **kwargs):
-        super(StoreSink, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.packets = []
 
     def run(self):
@@ -236,8 +238,8 @@ class StoreSink(Element):
 
 
 class Tee(Element):
-    def __init__(self, *args, n_outputs=1, output_pattern='tee_%02d', **kwargs):
-        super(Tee, self).__init__(args, **kwargs)
+    def __init__(self, *args, n_outputs=1, output_pattern="tee_%02d", **kwargs):
+        super().__init__(args, **kwargs)
         self.n_outputs = n_outputs
         self.output_pattern = output_pattern
 
@@ -260,8 +262,8 @@ class Tee(Element):
 
 
 class Zip(Element):
-    def __init__(self, n_inputs=1, input_pattern='zip_%02d'):
-        super(Zip, self).__init__(n_inputs=n_inputs, input_pattern=input_pattern)
+    def __init__(self, n_inputs=1, input_pattern="zip_%02d"):
+        super().__init__(n_inputs=n_inputs, input_pattern=input_pattern)
 
         self.inputs = [input_pattern % x for x in range(n_inputs)]
 

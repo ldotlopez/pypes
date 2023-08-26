@@ -1,3 +1,1 @@
-from .core import Pipeline, Element, \
-    Transformer, Filter, \
-    Empty, EOF
+from .core import EOF, Element, Empty, Filter, Pipeline, Transformer

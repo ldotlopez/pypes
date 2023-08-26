@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pypes"
+version = "0.0.20140318"
+authors = [
+  { name="Luis López", email="luis@cuarentaydos.com" },
+]
+description = "Flow-based programming for Python 3"
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = []
+
+[project.urls]
+"Homepage" = "https://github.com/ldotlopez/pypyes"
+"Bug Tracker" = "https://github.com/ldotlopez/pypyes/issues"

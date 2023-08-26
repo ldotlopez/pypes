@@ -1,20 +1,20 @@
-from . import Element, Empty, EOF
+from . import EOF, Element, Empty
 
 
 class FileSrc(Element):
-    allowed_modes = ('r', 'rb')
+    allowed_modes = ("r", "rb")
 
-    def __init__(self, path=None, mode='rb', bytes=-1):
+    def __init__(self, path=None, mode="rb", bytes=-1):
         if not path:
-            raise ValueError('path not specified')
+            raise ValueError("path not specified")
 
         if mode not in FileSrc.allowed_modes:
-            raise ValueError('mode must in one of {}'.format(FileSrc.allowed_modes))
+            raise ValueError(f"mode must in one of {FileSrc.allowed_modes}")
 
         if bytes <= 0 and bytes != -1:
-            raise ValueError('bytes must be greater than 0 or -1')
+            raise ValueError("bytes must be greater than 0 or -1")
 
-        super(FileSrc, self).__init__()
+        super().__init__()
 
         self.fh = open(path, mode)
         self.bytes = bytes
@@ -29,16 +29,16 @@ class FileSrc(Element):
 
 
 class FileSink(Element):
-    allowed_modes = ('w', 'wb', 'a', 'ab')
+    allowed_modes = ("w", "wb", "a", "ab")
 
-    def __init__(self, path=None, mode='wb'):
+    def __init__(self, path=None, mode="wb"):
         if not path:
-            raise ValueError('path not specified')
+            raise ValueError("path not specified")
 
         if mode not in FileSink.allowed_modes:
-            raise ValueError('mode must in one of {}'.format(FileSink.allowed_modes))
+            raise ValueError(f"mode must in one of {FileSink.allowed_modes}")
 
-        super(FileSink, self).__init__()
+        super().__init__()
 
         self.fh = open(path, mode)
 
